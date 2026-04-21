@@ -5,8 +5,6 @@ import { format, differenceInDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Invoice, Profile, Client, EmailTemplate } from '@/types/database'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 function interpolate(template: string, vars: Record<string, string>) {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`)
 }
@@ -15,6 +13,7 @@ type InvoiceWithClient = Invoice & { clients: Client | null }
 
 export async function POST() {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

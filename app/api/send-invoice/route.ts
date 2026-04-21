@@ -5,14 +5,13 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Invoice, Profile, Client, EmailTemplate } from '@/types/database'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 function interpolate(template: string, vars: Record<string, string>) {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? `{{${key}}}`)
 }
 
 export async function POST(request: Request) {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY)
     const { invoiceId } = await request.json()
     if (!invoiceId) return NextResponse.json({ error: 'invoiceId required' }, { status: 400 })
 
