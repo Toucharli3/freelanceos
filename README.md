@@ -2,7 +2,9 @@
 
 All-in-one client management platform for freelancers — clients, projects, invoices, and reminders in one place.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/freelanceos&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,RESEND_API_KEY,NEXT_PUBLIC_APP_URL)
+**Live demo:** [https://freelanceos-eta.vercel.app](https://freelanceos-eta.vercel.app)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Toucharli3/freelanceos&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY,RESEND_API_KEY,NEXT_PUBLIC_APP_URL)
 
 ## Features
 
@@ -83,7 +85,7 @@ Click the **Deploy with Vercel** button at the top of this README and fill in th
 
 ### Manual deploy
 
-1. Push the repository to GitHub
+1. Fork [Toucharli3/freelanceos](https://github.com/Toucharli3/freelanceos) on GitHub
 2. Import the project in [Vercel](https://vercel.com/new)
 3. Add all environment variables from `.env.local` (update `NEXT_PUBLIC_APP_URL` to your Vercel domain)
 4. Deploy
