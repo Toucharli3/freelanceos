@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/mailer'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Invoice, Profile, Client, EmailTemplate } from '@/types/database'
@@ -11,7 +11,6 @@ function interpolate(template: string, vars: Record<string, string>) {
 
 export async function POST(request: Request) {
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY)
     const { invoiceId } = await request.json()
     if (!invoiceId) return NextResponse.json({ error: 'invoiceId required' }, { status: 400 })
 
@@ -55,20 +54,13 @@ export async function POST(request: Request) {
 
     const subject = interpolate(template?.subject ?? defaultSubject, vars)
     const body = interpolate(template?.body ?? defaultBody, vars)
-    const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@freelanceos.app'
 
-    const { error: sendError } = await resend.emails.send({
-      from: fromEmail,
+    await sendEmail({
       to: invoice.clients.email,
       subject,
       text: body,
       html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;color:#0F172A">${body.replace(/\n/g, '<br/>')}</div>`,
     })
-
-    if (sendError) {
-      console.error('Resend error:', sendError)
-      return NextResponse.json({ error: sendError.message }, { status: 500 })
-    }
 
     await supabase.from('activities').insert({
       user_id: user.id,

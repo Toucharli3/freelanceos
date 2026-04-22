@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { Resend } from 'resend'
+import { sendEmail } from '@/lib/mailer'
 import { format, differenceInDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import type { Invoice, Profile, Client, EmailTemplate } from '@/types/database'
@@ -13,7 +13,6 @@ type InvoiceWithClient = Invoice & { clients: Client | null }
 
 export async function POST() {
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY)
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -35,7 +34,6 @@ export async function POST() {
     const { data: rawTemplates } = await supabase.from('email_templates').select('*').eq('user_id', user.id)
     const templates = (rawTemplates ?? []) as EmailTemplate[]
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'noreply@freelanceos.app'
     let sent = 0
 
     for (const invoice of overdueInvoices) {
@@ -79,18 +77,18 @@ export async function POST() {
       const subject = interpolate(template?.subject ?? `Relance — Facture ${invoice.invoice_number}`, vars)
       const body = interpolate(template?.body ?? `Relance pour la facture ${invoice.invoice_number}`, vars)
 
-      const { error } = await resend.emails.send({
-        from: fromEmail,
-        to: invoice.clients.email,
-        subject,
-        text: body,
-        html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;color:#0F172A">${body.replace(/\n/g, '<br/>')}</div>`,
-      })
-
-      if (!error) {
+      try {
+        await sendEmail({
+          to: invoice.clients.email,
+          subject,
+          text: body,
+          html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:32px;color:#0F172A">${body.replace(/\n/g, '<br/>')}</div>`,
+        })
         const patch: Record<string, string> = { [reminderField]: today.toISOString() }
         await supabase.from('invoices').update(patch as { reminder_1_sent_at?: string; reminder_2_sent_at?: string; reminder_3_sent_at?: string }).eq('id', invoice.id)
         sent++
+      } catch (e) {
+        console.error('Reminder send error:', e)
       }
     }
 
