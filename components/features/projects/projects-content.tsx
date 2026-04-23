@@ -8,28 +8,36 @@ import { ProjectFormDialog } from './project-form-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Plus, Search } from 'lucide-react'
 import { Project } from '@/types/database'
 
 const STATUSES: Array<{ value: 'all' | Project['status']; label: string }> = [
   { value: 'all', label: 'Tous' },
   { value: 'in_progress', label: 'En cours' },
-  { value: 'completed', label: 'Terminés' },
+  { value: 'completed', label: 'Termin\u00e9s' },
   { value: 'on_hold', label: 'En pause' },
-  { value: 'cancelled', label: 'Annulés' },
+  { value: 'cancelled', label: 'Annul\u00e9s' },
 ]
 
 export function ProjectsContent() {
   const { projects, isLoading } = useProjects()
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | Project['status']>('all')
+  const [search, setSearch] = useState('')
   const searchParams = useSearchParams()
 
   useEffect(() => {
     if (searchParams.get('new') === '1') setOpen(true)
   }, [searchParams])
 
-  const filtered = filter === 'all' ? projects : projects.filter(p => p.status === filter)
+  const filtered = projects
+    .filter(p => filter === 'all' || p.status === filter)
+    .filter(p =>
+      !search ||
+      p.title.toLowerCase().includes(search.toLowerCase()) ||
+      (p.clients?.name ?? '').toLowerCase().includes(search.toLowerCase())
+    )
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -55,6 +63,16 @@ export function ProjectsContent() {
         </Button>
       </div>
 
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+        <Input
+          placeholder="Rechercher un projet..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9 h-9 text-sm border-[#E2E8F0] focus-visible:ring-[#6366F1]"
+        />
+      </div>
+
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
@@ -62,7 +80,7 @@ export function ProjectsContent() {
       ) : filtered.length === 0 ? (
         <EmptyState
           title="Aucun projet"
-          description="Créez votre premier projet pour commencer à suivre vos missions."
+          description="Cr\u00e9ez votre premier projet pour commencer \u00e0 suivre vos missions."
           action={{ label: '+ Nouveau projet', onClick: () => setOpen(true) }}
         />
       ) : (
