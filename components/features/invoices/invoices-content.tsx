@@ -9,8 +9,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Plus, MoreHorizontal, Eye, Trash2, CheckCircle } from 'lucide-react'
+import { Plus, MoreHorizontal, Eye, Trash2, CheckCircle, Send, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { Invoice } from '@/types/database'
@@ -18,8 +19,8 @@ import { Invoice } from '@/types/database'
 const STATUSES: Array<{ value: 'all' | Invoice['status']; label: string }> = [
   { value: 'all', label: 'Toutes' },
   { value: 'draft', label: 'Brouillons' },
-  { value: 'sent', label: 'Envoyées' },
-  { value: 'paid', label: 'Payées' },
+  { value: 'sent', label: 'Envoy\u00e9es' },
+  { value: 'paid', label: 'Pay\u00e9es' },
   { value: 'overdue', label: 'En retard' },
 ]
 
@@ -27,6 +28,7 @@ export function InvoicesContent() {
   const { invoices, isLoading, deleteInvoice, updateInvoiceStatus } = useInvoices()
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | Invoice['status']>('all')
+  const [search, setSearch] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -35,7 +37,14 @@ export function InvoicesContent() {
     if (searchParams.get('new') === '1') setOpen(true)
   }, [searchParams])
 
-  const filtered = filter === 'all' ? invoices : invoices.filter(i => i.status === filter)
+  const filtered = invoices
+    .filter(i => filter === 'all' || i.status === filter)
+    .filter(i =>
+      !search ||
+      (i.invoice_number ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (i.clients?.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (i.clients?.company ?? '').toLowerCase().includes(search.toLowerCase())
+    )
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -64,6 +73,16 @@ export function InvoicesContent() {
         </Button>
       </div>
 
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+        <Input
+          placeholder="Rechercher une facture..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9 h-9 text-sm border-[#E2E8F0] focus-visible:ring-[#6366F1]"
+        />
+      </div>
+
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
@@ -71,7 +90,7 @@ export function InvoicesContent() {
       ) : filtered.length === 0 ? (
         <EmptyState
           title="Aucune facture"
-          description="Créez votre première facture en quelques clics."
+          description="Cr\u00e9ez votre premi\u00e8re facture en quelques clics."
           action={{ label: '+ Nouvelle facture', onClick: () => setOpen(true) }}
         />
       ) : (
@@ -79,10 +98,10 @@ export function InvoicesContent() {
           <table className="w-full text-sm">
             <thead className="border-b border-[#E2E8F0] bg-[#F9FAFB]">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-medium text-[#64748B]">N°</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-[#64748B]">N\u00b0</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-[#64748B]">Client</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-[#64748B] hidden sm:table-cell">Date</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-[#64748B] hidden md:table-cell">Échéance</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-[#64748B] hidden md:table-cell">\u00c9ch\u00e9ance</th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-[#64748B]">Montant</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-[#64748B]">Statut</th>
                 <th className="px-4 py-3" />
@@ -95,7 +114,7 @@ export function InvoicesContent() {
                     <span className="font-mono text-xs text-[#6366F1] font-semibold">{inv.invoice_number}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-[#0F172A]">{inv.clients?.name ?? '—'}</span>
+                    <span className="text-sm font-medium text-[#0F172A]">{inv.clients?.name ?? '\u2014'}</span>
                     {inv.clients?.company && <p className="text-xs text-[#64748B]">{inv.clients.company}</p>}
                   </td>
                   <td className="px-4 py-3 text-xs text-[#64748B] hidden sm:table-cell">
@@ -121,9 +140,14 @@ export function InvoicesContent() {
                         <DropdownMenuItem onClick={() => router.push(`/invoices/${inv.id}`)}>
                           <Eye className="w-3.5 h-3.5 mr-2" /> Voir
                         </DropdownMenuItem>
+                        {inv.status === 'draft' && (
+                          <DropdownMenuItem onClick={() => updateInvoiceStatus({ id: inv.id, status: 'sent' })}>
+                            <Send className="w-3.5 h-3.5 mr-2" /> Envoyer par email
+                          </DropdownMenuItem>
+                        )}
                         {inv.status !== 'paid' && (
                           <DropdownMenuItem onClick={() => updateInvoiceStatus({ id: inv.id, status: 'paid' })}>
-                            <CheckCircle className="w-3.5 h-3.5 mr-2" /> Marquer payée
+                            <CheckCircle className="w-3.5 h-3.5 mr-2" /> Marquer pay\u00e9e
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem className="text-red-500" onClick={() => setDeleteId(inv.id)}>
@@ -144,7 +168,7 @@ export function InvoicesContent() {
         open={!!deleteId}
         onOpenChange={(o) => !o && setDeleteId(null)}
         title="Supprimer cette facture ?"
-        description="Cette action est irréversible."
+        description="Cette action est irr\u00e9versible."
         onConfirm={() => { if (deleteId) deleteInvoice(deleteId, { onSuccess: () => setDeleteId(null) }) }}
       />
     </div>
